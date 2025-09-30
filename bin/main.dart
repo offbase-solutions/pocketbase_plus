@@ -325,22 +325,22 @@ void generateEnumForField(StringBuffer buffer, CollectionField field) {
 
 /// Generates the fields and their corresponding constants for the class.
 void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
-  buffer.writeln(" \n // Fields");
-  buffer.writeln("  final String? id;");
-  buffer.writeln("  static const String Id = 'id';");
+  // buffer.writeln(" \n // Fields");
+  // buffer.writeln("  final String? id;");
+  // buffer.writeln("  static const String Id = 'id';");
 
-  buffer.writeln("  \n final DateTime? created;");
-  buffer.writeln("  static const String Created = 'created';");
+  // buffer.writeln("  \n final DateTime? created;");
+  // buffer.writeln("  static const String Created = 'created';");
 
-  buffer.writeln("  \n final DateTime? updated;");
-  buffer.writeln("  static const String Updated = 'updated';");
+  // buffer.writeln("  \n final DateTime? updated;");
+  // buffer.writeln("  static const String Updated = 'updated';");
 
   for (var field in schema) {
     String fieldTypeFlag = field.required ? "?" : "";
-    String requiredString = field.required ? ", required: true)" : "";
+    String requiredString = field.required ? ", required: true" : "";
     buffer.writeln("\n @JsonKey(name: '${field.name}'$requiredString)");
     buffer.writeln(
-        "  \n final ${getType(field)}$fieldTypeFlag ${removeSnake(field.name)};");
+        "   final ${getType(field)}$fieldTypeFlag ${removeSnake(field.name)};");
     // buffer.writeln(
     //     "  static const String ${removeSnake(capName(field.name))} = '${field.name}';");
   }
@@ -351,9 +351,9 @@ void generateConstructor(
     String colName, StringBuffer buffer, List<CollectionField> schema) {
   buffer.writeln(
       "\n  const ${removeSnake(capName(singularizeWord(colName)))}Data({");
-  buffer.writeln("    this.id,");
-  buffer.writeln("    this.created,");
-  buffer.writeln("    this.updated,");
+  // buffer.writeln("    this.id,");
+  // buffer.writeln("    this.created,");
+  // buffer.writeln("    this.updated,");
 
   for (var field in schema) {
     buffer.writeln(
@@ -362,36 +362,36 @@ void generateConstructor(
 
   buffer.writeln("  });");
 
-  // Add copyWith method after constructor
-  buffer.writeln(
-      "\n  ${removeSnake(capName(singularizeWord(colName)))}Data copyWith({");
-  buffer.writeln("    String? id,");
-  buffer.writeln("    DateTime? created,");
-  buffer.writeln("    DateTime? updated,");
+  // // Add copyWith method after constructor
+  // buffer.writeln(
+  //     "\n  ${removeSnake(capName(singularizeWord(colName)))}Data copyWith({");
+  // buffer.writeln("    String? id,");
+  // buffer.writeln("    DateTime? created,");
+  // buffer.writeln("    DateTime? updated,");
 
-  for (var field in schema) {
-    var type = getType(field);
-    if (field.required && type != "dynamic") {
-      buffer.writeln("    ${getType(field)}? ${removeSnake(field.name)},");
-    } else {
-      buffer.writeln("    ${getType(field)}  ${removeSnake(field.name)},");
-    }
-  }
+  // for (var field in schema) {
+  //   var type = getType(field);
+  //   if (field.required && type != "dynamic") {
+  //     buffer.writeln("    ${getType(field)}? ${removeSnake(field.name)},");
+  //   } else {
+  //     buffer.writeln("    ${getType(field)}  ${removeSnake(field.name)},");
+  //   }
+  // }
 
-  buffer.writeln("  }) {");
-  buffer.writeln(
-      "    return ${removeSnake(capName(singularizeWord(colName)))}Data(");
-  buffer.writeln("      id: id ?? this.id,");
-  buffer.writeln("      created: created ?? this.created,");
-  buffer.writeln("      updated: updated ?? this.updated,");
+  // buffer.writeln("  }) {");
+  // buffer.writeln(
+  //     "    return ${removeSnake(capName(singularizeWord(colName)))}Data(");
+  // buffer.writeln("      id: id ?? this.id,");
+  // buffer.writeln("      created: created ?? this.created,");
+  // buffer.writeln("      updated: updated ?? this.updated,");
 
-  for (var field in schema) {
-    buffer.writeln(
-        "      ${removeSnake(field.name)}: ${removeSnake(field.name)} ?? this.${removeSnake(field.name)},");
-  }
+  // for (var field in schema) {
+  //   buffer.writeln(
+  //       "      ${removeSnake(field.name)}: ${removeSnake(field.name)} ?? this.${removeSnake(field.name)},");
+  // }
 
-  buffer.writeln("    );");
-  buffer.writeln("  }");
+  // buffer.writeln("    );");
+  // buffer.writeln("  }");
 }
 
 void generateJsonFactoryConstructor(
@@ -402,7 +402,7 @@ void generateJsonFactoryConstructor(
   buffer.writeln(
       "\n    factory ${className}.fromJson(Map<String, dynamic> json) => _${className}FromJson(json);");
   buffer.writeln(
-      "\n    Map<String, dynamic> toJson() => _${className}}ToJson(this);");
+      "\n    Map<String, dynamic> toJson() => _${className}ToJson(this);");
 }
 
 /// Generates the factory constructor for creating an instance from a PocketBase model.
