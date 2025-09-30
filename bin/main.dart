@@ -111,7 +111,7 @@ class Config {
           'Missing "domain", "email", or "password" in hosting configuration.');
     }
 
-    final outputDirectory = pbConfig['output_directory'] ?? './lib/models';
+    final outputDirectory = pbConfig['output_directory'] ?? './lib/models/data';
 
     return Config(
       domain: domain,
@@ -178,10 +178,18 @@ void createModelsDirectory(String path) {
 /// Generates Dart models for all collections.
 void generateModels(List<CollectionModel> collections, String outputDirectory) {
   for (var collection in collections) {
+    String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
     final modelContent = generateModelForCollection(collection);
-    final filePath = pp.join(outputDirectory, '${collection.name}.dart');
+    final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
     File(filePath).writeAsStringSync(modelContent);
   }
+}
+
+String camelCaseToSnakeCase(String camelCaseString) {
+  final RegExp exp = RegExp(r'(?<=[a-z0-9])[A-Z]');
+  return camelCaseString
+      .replaceAllMapped(exp, (Match m) => '_${m.group(0)}')
+      .toLowerCase();
 }
 
 /// Formats the generated model files using Dart's formatter.
@@ -189,16 +197,80 @@ void formatGeneratedModels(String modelsPath) {
   Process.runSync('dart', ['format', modelsPath]);
 }
 
+String singularizeWord(String pluralWord) {
+  // Handle common irregular plurals
+  switch (pluralWord.toLowerCase()) {
+    case 'men':
+      return 'man';
+    case 'women':
+      return 'woman';
+    case 'children':
+      return 'child';
+    case 'feet':
+      return 'foot';
+    case 'teeth':
+      return 'tooth';
+    case 'geese':
+      return 'goose';
+    case 'mice':
+      return 'mouse';
+    case 'oxen':
+      return 'ox';
+    case 'sheep':
+      return 'sheep'; // Irregular, singular and plural are the same
+    case 'fish':
+      return 'fish'; // Irregular, singular and plural are the same
+  }
+
+  // Handle words ending in "ies" (e.g., "families" -> "family")
+  if (pluralWord.endsWith('ies')) {
+    return pluralWord.substring(0, pluralWord.length - 3) + 'y';
+  }
+
+  // Handle words ending in "ves" (e.g., "wolves" -> "wolf")
+  if (pluralWord.endsWith('ves')) {
+    return pluralWord.substring(0, pluralWord.length - 3) + 'f';
+  }
+
+  // Handle words ending in "es" (e.g., "boxes" -> "box")
+  if (pluralWord.endsWith('es')) {
+    // Check for "ch", "sh", "s", "x", "z" before "es"
+    if (pluralWord.endsWith('ches') ||
+        pluralWord.endsWith('shes') ||
+        pluralWord.endsWith('ses') ||
+        pluralWord.endsWith('xes') ||
+        pluralWord.endsWith('zes')) {
+      return pluralWord.substring(0, pluralWord.length - 2);
+    }
+  }
+
+  // Handle regular plurals ending in "s"
+  if (pluralWord.endsWith('s') && pluralWord.length > 1) {
+    // Ensure it's not a word that naturally ends in 's' in singular form (e.g., "bus")
+    // This is a basic check and might not cover all cases.
+    if (!['bus', 'gas', 'lens'].contains(pluralWord.toLowerCase())) {
+      return pluralWord.substring(0, pluralWord.length - 1);
+    }
+  }
+
+  // If no rule matches, return the original word
+  return pluralWord;
+}
+
 /// Generates the Dart model code for a single collection.
 String generateModelForCollection(CollectionModel collection) {
   final buffer = StringBuffer();
-
+  String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
   // Add file documentation and imports
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
   buffer.writeln('// Model for collection ${collection.name}');
   buffer.writeln('// ignore_for_file: constant_identifier_names');
   buffer.writeln();
+  buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
   buffer.writeln("import 'package:pocketbase/pocketbase.dart';");
+
+  buffer.writeln("part '${fileName}_data.g.dart';");
+
   buffer.writeln();
 
   // Add enums for 'select' fields
@@ -209,7 +281,8 @@ String generateModelForCollection(CollectionModel collection) {
   }
 
   // Add class declaration
-  buffer.writeln("class ${removeSnake(capName(collection.name))}Model {");
+  buffer.writeln(
+      "class ${removeSnake(capName(singularizeWord(collection.name)))}Data {");
   generateClassFields(buffer, collection.fields);
   generateConstructor(collection.name, buffer, collection.fields);
   generateFactoryConstructor(buffer, collection);
@@ -270,7 +343,7 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
 /// Generates the constructor for the class.
 void generateConstructor(
     String colName, StringBuffer buffer, List<CollectionField> schema) {
-  buffer.writeln("\n  const ${removeSnake(capName(colName))}Model({");
+  buffer.writeln("\n  const ${removeSnake(capName(colName))}Data({");
   buffer.writeln("    this.id,");
   buffer.writeln("    this.created,");
   buffer.writeln("    this.updated,");
@@ -283,7 +356,7 @@ void generateConstructor(
   buffer.writeln("  });");
 
   // Add copyWith method after constructor
-  buffer.writeln("\n  ${removeSnake(capName(colName))}Model copyWith({");
+  buffer.writeln("\n  ${removeSnake(capName(colName))}Data copyWith({");
   buffer.writeln("    String? id,");
   buffer.writeln("    DateTime? created,");
   buffer.writeln("    DateTime? updated,");
@@ -298,7 +371,7 @@ void generateConstructor(
   }
 
   buffer.writeln("  }) {");
-  buffer.writeln("    return ${removeSnake(capName(colName))}Model(");
+  buffer.writeln("    return ${removeSnake(capName(colName))}Data(");
   buffer.writeln("      id: id ?? this.id,");
   buffer.writeln("      created: created ?? this.created,");
   buffer.writeln("      updated: updated ?? this.updated,");
@@ -316,8 +389,8 @@ void generateConstructor(
 void generateFactoryConstructor(
     StringBuffer buffer, CollectionModel collection) {
   buffer.writeln(
-      "\n  factory ${removeSnake(capName(collection.name))}Model.fromModel(RecordModel r) {");
-  buffer.writeln("    return ${removeSnake(capName(collection.name))}Model(");
+      "\n  factory ${removeSnake(capName(collection.name))}Data.fromModel(RecordModel r) {");
+  buffer.writeln("    return ${removeSnake(capName(collection.name))}Data(");
   buffer.writeln("      id: r.id,");
   buffer.writeln("      created: DateTime.parse(r.created),");
   buffer.writeln("      updated: DateTime.parse(r.updated),");
