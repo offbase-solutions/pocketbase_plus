@@ -281,6 +281,7 @@ String generateModelForCollection(CollectionModel collection) {
   }
 
   // Add class declaration
+  buffer.writeln("@JsonSerializable()");
   buffer.writeln(
       "class ${removeSnake(capName(singularizeWord(collection.name)))}Data {");
   generateClassFields(buffer, collection.fields);
@@ -343,7 +344,8 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
 /// Generates the constructor for the class.
 void generateConstructor(
     String colName, StringBuffer buffer, List<CollectionField> schema) {
-  buffer.writeln("\n  const ${removeSnake(capName(colName))}Data({");
+  buffer.writeln(
+      "\n  const ${removeSnake(capName(singularizeWord(colName)))}Data({");
   buffer.writeln("    this.id,");
   buffer.writeln("    this.created,");
   buffer.writeln("    this.updated,");
@@ -356,7 +358,8 @@ void generateConstructor(
   buffer.writeln("  });");
 
   // Add copyWith method after constructor
-  buffer.writeln("\n  ${removeSnake(capName(colName))}Data copyWith({");
+  buffer.writeln(
+      "\n  ${removeSnake(capName(singularizeWord(colName)))}Data copyWith({");
   buffer.writeln("    String? id,");
   buffer.writeln("    DateTime? created,");
   buffer.writeln("    DateTime? updated,");
@@ -389,8 +392,9 @@ void generateConstructor(
 void generateFactoryConstructor(
     StringBuffer buffer, CollectionModel collection) {
   buffer.writeln(
-      "\n  factory ${removeSnake(capName(collection.name))}Data.fromModel(RecordModel r) {");
-  buffer.writeln("    return ${removeSnake(capName(collection.name))}Data(");
+      "\n  factory ${removeSnake(capName(singularizeWord(collection.name)))}Data.fromModel(RecordModel r) {");
+  buffer.writeln(
+      "    return ${removeSnake(capName(singularizeWord(collection.name)))}Data(");
   buffer.writeln("      id: r.id,");
   buffer.writeln("      created: DateTime.parse(r.created),");
   buffer.writeln("      updated: DateTime.parse(r.updated),");
