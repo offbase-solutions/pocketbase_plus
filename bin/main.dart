@@ -202,7 +202,7 @@ String generateModelForCollection(CollectionModel collection) {
   buffer.writeln();
 
   // Add enums for 'select' fields
-  for (var field in collection.schema) {
+  for (var field in collection.fields) {
     if (field.type == 'select') {
       generateEnumForField(buffer, field);
     }
@@ -210,10 +210,10 @@ String generateModelForCollection(CollectionModel collection) {
 
   // Add class declaration
   buffer.writeln("class ${removeSnake(capName(collection.name))}Model {");
-  generateClassFields(buffer, collection.schema);
-  generateConstructor(collection.name, buffer, collection.schema);
+  generateClassFields(buffer, collection.fields);
+  generateConstructor(collection.name, buffer, collection.fields);
   generateFactoryConstructor(buffer, collection);
-  generateToMapMethod(buffer, collection.schema);
+  generateToMapMethod(buffer, collection.fields);
   buffer.writeln("}"); // Close class
 
   return buffer.toString();
@@ -223,7 +223,7 @@ String generateModelForCollection(CollectionModel collection) {
 void generateEnumForField(StringBuffer buffer, CollectionField field) {
   // Start the enum definition with constructor
   buffer.writeln('enum ${capName(removeSnake(field.name))}Enum {');
-  for (var option in field.options['values']) {
+  for (var option in field.data['values']) {
     buffer.writeln('${removeSnake(option)}("$option"),');
   }
   buffer.writeln(';\n');
@@ -322,7 +322,7 @@ void generateFactoryConstructor(
   buffer.writeln("      created: DateTime.parse(r.created),");
   buffer.writeln("      updated: DateTime.parse(r.updated),");
 
-  for (var field in collection.schema) {
+  for (var field in collection.fields) {
     if (field.type == 'select') {
       buffer.writeln(
           "      ${removeSnake(field.name)}: ${capName(removeSnake(field.name))}Enum.fromValue(r.data['${field.name}']! as String),");
