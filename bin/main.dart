@@ -286,8 +286,9 @@ String generateModelForCollection(CollectionModel collection) {
       "class ${removeSnake(capName(singularizeWord(collection.name)))}Data {");
   generateClassFields(buffer, collection.fields);
   generateConstructor(collection.name, buffer, collection.fields);
-  generateFactoryConstructor(buffer, collection);
-  generateToMapMethod(buffer, collection.fields);
+  // generateFactoryConstructor(buffer, collection);
+  generateJsonFactoryConstructor(buffer, collection);
+  // generateToMapMethod(buffer, collection.fields);
   buffer.writeln("}"); // Close class
 
   return buffer.toString();
@@ -374,7 +375,8 @@ void generateConstructor(
   }
 
   buffer.writeln("  }) {");
-  buffer.writeln("    return ${removeSnake(capName(colName))}Data(");
+  buffer.writeln(
+      "    return ${removeSnake(capName(singularizeWord(colName)))}Data(");
   buffer.writeln("      id: id ?? this.id,");
   buffer.writeln("      created: created ?? this.created,");
   buffer.writeln("      updated: updated ?? this.updated,");
@@ -386,6 +388,17 @@ void generateConstructor(
 
   buffer.writeln("    );");
   buffer.writeln("  }");
+}
+
+void generateJsonFactoryConstructor(
+    StringBuffer buffer, CollectionModel collection) {
+  String className =
+      "${removeSnake(capName(singularizeWord(collection.name)))}Data";
+
+  buffer.writeln(
+      "\n    factory ${className}.fromJson(Map<String, dynamic> json) => _${className}FromJson(json);");
+  buffer.writeln(
+      "\n    Map<String, dynamic> toJson() => _${className}}ToJson(this);");
 }
 
 /// Generates the factory constructor for creating an instance from a PocketBase model.
