@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:js_interop';
+// import 'dart:js_interop';
 import 'package:path/path.dart' as pp;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:yaml/yaml.dart';
@@ -224,12 +224,12 @@ String singularizeWord(String pluralWord) {
 
   // Handle words ending in "ies" (e.g., "families" -> "family")
   if (pluralWord.endsWith('ies')) {
-    return pluralWord.substring(0, pluralWord.length - 3) + 'y';
+    return '${pluralWord.substring(0, pluralWord.length - 3)}y';
   }
 
   // Handle words ending in "ves" (e.g., "wolves" -> "wolf")
   if (pluralWord.endsWith('ves')) {
-    return pluralWord.substring(0, pluralWord.length - 3) + 'f';
+    return '${pluralWord.substring(0, pluralWord.length - 3)}f';
   }
 
   // Handle words ending in "es" (e.g., "boxes" -> "box")
