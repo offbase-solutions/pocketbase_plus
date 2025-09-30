@@ -381,14 +381,24 @@ void generateGeoPointModel(String outputDirectory) {
   File(filePath).writeAsStringSync(buffer.toString());
 }
 
+// void generateJsonFactoryConstructor(
+//     StringBuffer buffer, CollectionModel collection) {
+//   String className = createCollectionClassName(collection.name);
+
+//   buffer.writeln(
+//       "\n    factory $className.fromJson(Map<String, dynamic> json) => _\$${className}FromJson(json);");
+//   buffer.writeln(
+//       "\n    Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
+// }
+
 void generateJsonFactoryConstructor(
     StringBuffer buffer, CollectionModel collection) {
   String className = createCollectionClassName(collection.name);
 
   buffer.writeln(
-      "\n    factory $className.fromJson(Map<String, dynamic> json) => _${className}FromJson(json);");
+      "\n  factory $className.fromJson(Map<String, dynamic> json) => _\$${className}FromJson(json);");
   buffer.writeln(
-      "\n    Map<String, dynamic> toJson() => _${className}ToJson(this);");
+      "  Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
 }
 
 /// Capitalizes the first letter of a string.
@@ -437,9 +447,7 @@ String getType(CollectionField field, List<CollectionModel> collections) {
     case 'number':
       return field.required ? 'num' : 'num?';
     case 'json':
-      return field.required
-          ? 'Map<String, dynamic>?'
-          : 'Map<String, dynamic>?';
+      return field.required ? 'Map<String, dynamic>?' : 'Map<String, dynamic>?';
     case 'bool':
       return field.required ? 'bool' : 'bool?';
     case 'date':
