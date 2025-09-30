@@ -270,7 +270,7 @@ String generateModelForCollection(
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
   buffer.writeln("import 'package:pocketbase/pocketbase.dart';");
-  buffer.writeln("part '${fileName}_data.g.dart';");
+  buffer.writeln("part '${fileName}_pb_data.g.dart';");
   buffer.writeln();
 
   // Add enums for 'select' fields
@@ -330,7 +330,7 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema,
   for (var field in schema) {
     String fieldType = getType(field, collections);
     String requiredString = field.required ? ", required: true" : "";
-    buffer.writeln("\n @JsonKey(name: '${field.name}'$requiredString)");
+    buffer.writeln("\n  @JsonKey(name: '${field.name}'$requiredString)");
     buffer.writeln("   final $fieldType ${removeSnake(field.name)};");
   }
 }
@@ -438,8 +438,8 @@ String getType(CollectionField field, List<CollectionModel> collections) {
       return field.required ? 'num' : 'num?';
     case 'json':
       return field.required
-          ? 'final Map<String, dynamic>?'
-          : 'final Map<String, dynamic>?';
+          ? 'Map<String, dynamic>?'
+          : 'Map<String, dynamic>?';
     case 'bool':
       return field.required ? 'bool' : 'bool?';
     case 'date':
