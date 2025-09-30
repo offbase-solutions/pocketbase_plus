@@ -336,9 +336,13 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
   buffer.writeln("  static const String Updated = 'updated';");
 
   for (var field in schema) {
-    buffer.writeln("  \n final ${getType(field)} ${removeSnake(field.name)};");
+    String fieldTypeFlag = field.required ? "?" : "";
+    String requiredString = field.required ? ", required: true)" : "";
+    buffer.writeln("\n @JsonKey(name: '${field.name}'$requiredString)");
     buffer.writeln(
-        "  static const String ${removeSnake(capName(field.name))} = '${field.name}';");
+        "  \n final ${getType(field)}$fieldTypeFlag ${removeSnake(field.name)};");
+    // buffer.writeln(
+    //     "  static const String ${removeSnake(capName(field.name))} = '${field.name}';");
   }
 }
 
@@ -487,6 +491,7 @@ String getType(CollectionField field) {
     case 'bool':
       return field.required ? 'bool' : 'bool?';
     case 'date':
+    case 'autodate':
       return field.required ? 'DateTime' : 'DateTime?';
     case 'select':
       return field.required
