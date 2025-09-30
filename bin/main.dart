@@ -220,7 +220,7 @@ String generateModelForCollection(CollectionModel collection) {
 }
 
 /// Generates an enum for a 'select' field in the collection schema.
-void generateEnumForField(StringBuffer buffer, SchemaField field) {
+void generateEnumForField(StringBuffer buffer, CollectionField field) {
   // Start the enum definition with constructor
   buffer.writeln('enum ${capName(removeSnake(field.name))}Enum {');
   for (var option in field.options['values']) {
@@ -249,7 +249,7 @@ void generateEnumForField(StringBuffer buffer, SchemaField field) {
 }
 
 /// Generates the fields and their corresponding constants for the class.
-void generateClassFields(StringBuffer buffer, List<SchemaField> schema) {
+void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
   buffer.writeln(" \n // Fields");
   buffer.writeln("  final String? id;");
   buffer.writeln("  static const String Id = 'id';");
@@ -269,7 +269,7 @@ void generateClassFields(StringBuffer buffer, List<SchemaField> schema) {
 
 /// Generates the constructor for the class.
 void generateConstructor(
-    String colName, StringBuffer buffer, List<SchemaField> schema) {
+    String colName, StringBuffer buffer, List<CollectionField> schema) {
   buffer.writeln("\n  const ${removeSnake(capName(colName))}Model({");
   buffer.writeln("    this.id,");
   buffer.writeln("    this.created,");
@@ -345,7 +345,7 @@ void generateFactoryConstructor(
 }
 
 /// Generates the `toMap` method for the class, converting it to a Map.
-void generateToMapMethod(StringBuffer buffer, List<SchemaField> schema) {
+void generateToMapMethod(StringBuffer buffer, List<CollectionField> schema) {
   buffer.writeln("\n  Map<String, dynamic> toMap() {");
   buffer.writeln("    return {");
 
@@ -388,7 +388,7 @@ String removeSnake(String str) {
 }
 
 /// Maps the schema field type to a Dart type.
-String getType(SchemaField field) {
+String getType(CollectionField field) {
   switch (field.type) {
     case 'text':
       return field.required ? 'String' : 'String?';
