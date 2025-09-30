@@ -372,10 +372,10 @@ void generateGeoPointModel(String outputDirectory) {
   buffer.writeln();
   buffer.writeln(
       '  factory GeoPointPbData.fromJson(Map<String, dynamic> json) =>');
-  buffer.writeln('      _GeoPointPbDataFromJson(json);');
+  buffer.writeln('      _\$GeoPointPbDataFromJson(json);');
   buffer.writeln();
   buffer.writeln(
-      '  Map<String, dynamic> toJson() => _GeoPointPbDataToJson(this);');
+      '  Map<String, dynamic> toJson() => _\$GeoPointPbDataToJson(this);');
   buffer.writeln('}');
   final filePath = pp.join(outputDirectory, 'geo_point_pb_data.dart');
   File(filePath).writeAsStringSync(buffer.toString());
