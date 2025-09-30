@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:js_interop';
 import 'package:path/path.dart' as pp;
 import 'package:pocketbase/pocketbase.dart';
 import 'package:yaml/yaml.dart';
@@ -31,7 +32,6 @@ Future<void> main(List<String> arguments) async {
   final configPath = argResults['config'] as String;
 
   print('Loading configuration from $configPath');
-
   Config config;
   try {
     config = loadConfiguration(configPath);
@@ -42,7 +42,6 @@ Future<void> main(List<String> arguments) async {
   }
 
   print('Authenticating with PocketBase');
-
   final pb = PocketBase(config.domain);
 
   try {
@@ -58,19 +57,15 @@ Future<void> main(List<String> arguments) async {
   }
 
   print('Fetching collections from PocketBase');
-
   final collections = await pb.collections.getFullList();
 
   print('Creating models directory at ${config.outputDirectory}');
-
   createModelsDirectory(config.outputDirectory);
 
   print('Generating models');
-
   generateModels(collections, config.outputDirectory);
 
   print('Formatting generated models');
-
   formatGeneratedModels(config.outputDirectory);
 
   print('Done');
@@ -178,11 +173,16 @@ void createModelsDirectory(String path) {
 /// Generates Dart models for all collections.
 void generateModels(List<CollectionModel> collections, String outputDirectory) {
   for (var collection in collections) {
+    // Skip collections whose name starts with an underscore
+    if (collection.name.startsWith('_')) {
+      continue;
+    }
     String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-    final modelContent = generateModelForCollection(collection);
-    final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
+    final modelContent = generateModelForCollection(collection, collections);
+    final filePath = pp.join(outputDirectory, '${fileName}_pb_data.dart');
     File(filePath).writeAsStringSync(modelContent);
   }
+  generateGeoPointModel(outputDirectory);
 }
 
 String camelCaseToSnakeCase(String camelCaseString) {
@@ -258,9 +258,11 @@ String singularizeWord(String pluralWord) {
 }
 
 /// Generates the Dart model code for a single collection.
-String generateModelForCollection(CollectionModel collection) {
+String generateModelForCollection(
+    CollectionModel collection, List<CollectionModel> collections) {
   final buffer = StringBuffer();
   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
+  String className = createCollectionClassName(collection.name);
   // Add file documentation and imports
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
   buffer.writeln('// Model for collection ${collection.name}');
@@ -268,9 +270,7 @@ String generateModelForCollection(CollectionModel collection) {
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
   buffer.writeln("import 'package:pocketbase/pocketbase.dart';");
-
   buffer.writeln("part '${fileName}_data.g.dart';");
-
   buffer.writeln();
 
   // Add enums for 'select' fields
@@ -282,13 +282,12 @@ String generateModelForCollection(CollectionModel collection) {
 
   // Add class declaration
   buffer.writeln("@JsonSerializable()");
-  buffer.writeln(
-      "class ${removeSnake(capName(singularizeWord(collection.name)))}Data {");
-  generateClassFields(buffer, collection.fields);
+  buffer.writeln("class $className {");
+
+  generateClassFields(buffer, collection.fields, collections);
   generateConstructor(collection.name, buffer, collection.fields);
-  // generateFactoryConstructor(buffer, collection);
   generateJsonFactoryConstructor(buffer, collection);
-  // generateToMapMethod(buffer, collection.fields);
+
   buffer.writeln("}"); // Close class
 
   return buffer.toString();
@@ -298,9 +297,11 @@ String generateModelForCollection(CollectionModel collection) {
 void generateEnumForField(StringBuffer buffer, CollectionField field) {
   // Start the enum definition with constructor
   buffer.writeln('enum ${capName(removeSnake(field.name))}Enum {');
+
   for (var option in field.data['values']) {
     buffer.writeln('${removeSnake(option)}("$option"),');
   }
+
   buffer.writeln(';\n');
 
   // Add a final String field and the constructor
@@ -324,144 +325,70 @@ void generateEnumForField(StringBuffer buffer, CollectionField field) {
 }
 
 /// Generates the fields and their corresponding constants for the class.
-void generateClassFields(StringBuffer buffer, List<CollectionField> schema) {
-  // buffer.writeln(" \n // Fields");
-  // buffer.writeln("  final String? id;");
-  // buffer.writeln("  static const String Id = 'id';");
-
-  // buffer.writeln("  \n final DateTime? created;");
-  // buffer.writeln("  static const String Created = 'created';");
-
-  // buffer.writeln("  \n final DateTime? updated;");
-  // buffer.writeln("  static const String Updated = 'updated';");
-
+void generateClassFields(StringBuffer buffer, List<CollectionField> schema,
+    List<CollectionModel> collections) {
   for (var field in schema) {
-    String fieldTypeFlag = field.required ? "?" : "";
+    String fieldType = getType(field, collections);
     String requiredString = field.required ? ", required: true" : "";
     buffer.writeln("\n @JsonKey(name: '${field.name}'$requiredString)");
-    buffer.writeln(
-        "   final ${getType(field)}$fieldTypeFlag ${removeSnake(field.name)};");
-    // buffer.writeln(
-    //     "  static const String ${removeSnake(capName(field.name))} = '${field.name}';");
+    buffer.writeln("   final $fieldType ${removeSnake(field.name)};");
   }
 }
 
 /// Generates the constructor for the class.
 void generateConstructor(
     String colName, StringBuffer buffer, List<CollectionField> schema) {
-  buffer.writeln(
-      "\n  const ${removeSnake(capName(singularizeWord(colName)))}Data({");
-  // buffer.writeln("    this.id,");
-  // buffer.writeln("    this.created,");
-  // buffer.writeln("    this.updated,");
-
+  String className = createCollectionClassName(colName);
+  buffer.writeln("\n  const $className({");
   for (var field in schema) {
     buffer.writeln(
-        "    ${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
+        "${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
   }
-
   buffer.writeln("  });");
+}
 
-  // // Add copyWith method after constructor
-  // buffer.writeln(
-  //     "\n  ${removeSnake(capName(singularizeWord(colName)))}Data copyWith({");
-  // buffer.writeln("    String? id,");
-  // buffer.writeln("    DateTime? created,");
-  // buffer.writeln("    DateTime? updated,");
-
-  // for (var field in schema) {
-  //   var type = getType(field);
-  //   if (field.required && type != "dynamic") {
-  //     buffer.writeln("    ${getType(field)}? ${removeSnake(field.name)},");
-  //   } else {
-  //     buffer.writeln("    ${getType(field)}  ${removeSnake(field.name)},");
-  //   }
-  // }
-
-  // buffer.writeln("  }) {");
-  // buffer.writeln(
-  //     "    return ${removeSnake(capName(singularizeWord(colName)))}Data(");
-  // buffer.writeln("      id: id ?? this.id,");
-  // buffer.writeln("      created: created ?? this.created,");
-  // buffer.writeln("      updated: updated ?? this.updated,");
-
-  // for (var field in schema) {
-  //   buffer.writeln(
-  //       "      ${removeSnake(field.name)}: ${removeSnake(field.name)} ?? this.${removeSnake(field.name)},");
-  // }
-
-  // buffer.writeln("    );");
-  // buffer.writeln("  }");
+/// Generates a standalone GeoPoint model file (geo_point_pb_data.dart) for PocketBase geopoint fields.
+void generateGeoPointModel(String outputDirectory) {
+  final buffer = StringBuffer();
+  buffer.writeln('// This file is auto-generated. Do not modify manually.');
+  buffer.writeln('// GeoPoint model for PocketBase geopoint fields');
+  buffer.writeln('// ignore_for_file: constant_identifier_names');
+  buffer.writeln();
+  buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
+  buffer.writeln();
+  buffer.writeln("part 'geo_point_pb_data.g.dart';");
+  buffer.writeln();
+  buffer.writeln('@JsonSerializable()');
+  buffer.writeln('class GeoPointPbData {');
+  buffer.writeln('  @JsonKey(name: \'lon\')');
+  buffer.writeln('  final double longitude;');
+  buffer.writeln('  @JsonKey(name: \'lat\')');
+  buffer.writeln('  final double latitude;');
+  buffer.writeln();
+  buffer.writeln('  const GeoPointPbData({');
+  buffer.writeln('    required this.longitude,');
+  buffer.writeln('    required this.latitude,');
+  buffer.writeln('  });');
+  buffer.writeln();
+  buffer.writeln(
+      '  factory GeoPointPbData.fromJson(Map<String, dynamic> json) =>');
+  buffer.writeln('      _GeoPointPbDataFromJson(json);');
+  buffer.writeln();
+  buffer.writeln(
+      '  Map<String, dynamic> toJson() => _GeoPointPbDataToJson(this);');
+  buffer.writeln('}');
+  final filePath = pp.join(outputDirectory, 'geo_point_pb_data.dart');
+  File(filePath).writeAsStringSync(buffer.toString());
 }
 
 void generateJsonFactoryConstructor(
     StringBuffer buffer, CollectionModel collection) {
-  String className =
-      "${removeSnake(capName(singularizeWord(collection.name)))}Data";
+  String className = createCollectionClassName(collection.name);
 
   buffer.writeln(
-      "\n    factory ${className}.fromJson(Map<String, dynamic> json) => _${className}FromJson(json);");
+      "\n    factory $className.fromJson(Map<String, dynamic> json) => _${className}FromJson(json);");
   buffer.writeln(
       "\n    Map<String, dynamic> toJson() => _${className}ToJson(this);");
-}
-
-/// Generates the factory constructor for creating an instance from a PocketBase model.
-void generateFactoryConstructor(
-    StringBuffer buffer, CollectionModel collection) {
-  buffer.writeln(
-      "\n  factory ${removeSnake(capName(singularizeWord(collection.name)))}Data.fromModel(RecordModel r) {");
-  buffer.writeln(
-      "    return ${removeSnake(capName(singularizeWord(collection.name)))}Data(");
-  buffer.writeln("      id: r.id,");
-  buffer.writeln("      created: DateTime.parse(r.created),");
-  buffer.writeln("      updated: DateTime.parse(r.updated),");
-
-  for (var field in collection.fields) {
-    if (field.type == 'select') {
-      buffer.writeln(
-          "      ${removeSnake(field.name)}: ${capName(removeSnake(field.name))}Enum.fromValue(r.data['${field.name}']! as String),");
-    } else if (field.type == 'date') {
-      if (field.required) {
-        buffer.writeln(
-            "       ${removeSnake(field.name)}: DateTime.parse(r.data['${field.name}']! as String),");
-      } else {
-        buffer.writeln(
-            "      ${removeSnake(field.name)}: r.data['${field.name}'] != null && r.data['${field.name}'] != '' ? DateTime.parse(r.data['${field.name}']) : null,");
-      }
-    } else {
-      buffer.writeln(
-          "      ${removeSnake(field.name)}: r.data['${field.name}'],");
-    }
-  }
-
-  buffer.writeln("    );");
-  buffer.writeln("  }");
-}
-
-/// Generates the `toMap` method for the class, converting it to a Map.
-void generateToMapMethod(StringBuffer buffer, List<CollectionField> schema) {
-  buffer.writeln("\n  Map<String, dynamic> toMap() {");
-  buffer.writeln("    return {");
-
-  for (var field in schema) {
-    if (field.type == 'select') {
-      buffer
-          .writeln("      '${field.name}': ${removeSnake(field.name)}.value,");
-    } else if (field.type == 'date') {
-      if (field.required) {
-        buffer.writeln(
-            "      '${field.name}': ${removeSnake(field.name)}.toIso8601String(),");
-      } else {
-        buffer.writeln(
-            "      '${field.name}': ${removeSnake(field.name)}?.toIso8601String(),");
-      }
-    } else {
-      buffer.writeln("      '${field.name}': ${removeSnake(field.name)},");
-    }
-  }
-
-  buffer.writeln("    };");
-  buffer.writeln("  }");
 }
 
 /// Capitalizes the first letter of a string.
@@ -481,13 +408,38 @@ String removeSnake(String str) {
           previous.isEmpty ? element : previous + capName(element));
 }
 
+/// Function to get a collection by its field name from List<CollectionModel> and return the class name
+String getCollectionClassName(
+    String collectionId, List<CollectionModel> collections) {
+  for (var collection in collections) {
+    if (collection.id == collectionId) {
+      return createCollectionClassName(collection.name);
+    }
+  }
+  return 'UnknownClass';
+}
+
+/// Creates the class name for a collection based on its name.
+String createCollectionClassName(String collectionName) {
+  return "${removeSnake(capName(singularizeWord(collectionName)))}PbData";
+}
+
 /// Maps the schema field type to a Dart type.
-String getType(CollectionField field) {
+String getType(CollectionField field, List<CollectionModel> collections) {
   switch (field.type) {
     case 'text':
+    case 'file':
+    case 'email':
+    case 'url':
       return field.required ? 'String' : 'String?';
+    case 'geoPoint':
+      return field.required ? 'GeoPointPbData' : 'GeoPointPbData?';
     case 'number':
       return field.required ? 'num' : 'num?';
+    case 'json':
+      return field.required
+          ? 'final Map<String, dynamic>?'
+          : 'final Map<String, dynamic>?';
     case 'bool':
       return field.required ? 'bool' : 'bool?';
     case 'date':
@@ -497,6 +449,13 @@ String getType(CollectionField field) {
       return field.required
           ? '${capName(removeSnake(field.name))}Enum'
           : '${capName(removeSnake(field.name))}Enum?';
+    case 'relation':
+      return field.required
+          ? 'String'
+          : 'String?'; //TODO: Need to check targetCollectionId, so I can build the className for the property
+    // return field.required
+    //     ? 'List<${getCollectionClassName(field., collections)}>'
+    //     : 'List<${getCollectionClassName(field.targetCollectionId!, collections)}>?';
     default:
       return 'dynamic';
   }
