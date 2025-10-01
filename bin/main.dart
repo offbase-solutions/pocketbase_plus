@@ -697,7 +697,36 @@ String createCollectionClassName(String collectionName) {
   return "${removeSnake(capName(singularizeWord(collectionName)))}Data";
 }
 
-/// Maps the schema field type to a Dart type.
+// ADD this helper function to detect integer field names
+bool _isIntegerFieldName(String fieldName) {
+  final integerSuffixes = [
+    'count',
+    'minutes',
+    'seconds',
+    'hours',
+    'days',
+    'weeks',
+    'months',
+    'years',
+    'age',
+    'quantity',
+    'total',
+    'index',
+    'position',
+    'rank',
+    'level',
+    'size',
+    'length',
+    'width',
+    'height',
+    'number',
+  ];
+
+  final lowerFieldName = fieldName.toLowerCase();
+  return integerSuffixes.any((suffix) => lowerFieldName.endsWith(suffix));
+}
+
+// REPLACE the existing getType function with this updated version
 String getType(CollectionField field, List<CollectionModel> collections) {
   switch (field.type) {
     case 'text':
@@ -708,7 +737,11 @@ String getType(CollectionField field, List<CollectionModel> collections) {
     case 'geoPoint':
       return field.required ? 'GeoPointData' : 'GeoPointData?';
     case 'number':
-      return field.required ? 'num' : 'num?';
+      // Check if field name suggests integer type
+      if (_isIntegerFieldName(field.name)) {
+        return field.required ? 'int' : 'int?';
+      }
+      return field.required ? 'double' : 'double?';
     case 'json':
       return field.required ? 'Map<String, dynamic>?' : 'Map<String, dynamic>?';
     case 'bool':
@@ -721,13 +754,43 @@ String getType(CollectionField field, List<CollectionModel> collections) {
           ? '${capName(removeSnake(field.name))}Enum'
           : '${capName(removeSnake(field.name))}Enum?';
     case 'relation':
-      return field.required
-          ? 'String'
-          : 'String?'; //TODO: Need to check targetCollectionId, so I can build the className for the property
-    // return field.required
-    //     ? 'List<${getCollectionClassName(field., collections)}>'
-    //     : 'List<${getCollectionClassName(field.targetCollectionId!, collections)}>?';
+      return field.required ? 'String' : 'String?';
     default:
       return 'dynamic';
   }
 }
+
+/// Maps the schema field type to a Dart type.
+// String getType(CollectionField field, List<CollectionModel> collections) {
+//   switch (field.type) {
+//     case 'text':
+//     case 'file':
+//     case 'email':
+//     case 'url':
+//       return field.required ? 'String' : 'String?';
+//     case 'geoPoint':
+//       return field.required ? 'GeoPointData' : 'GeoPointData?';
+//     case 'number':
+//       return field.required ? 'num' : 'num?';
+//     case 'json':
+//       return field.required ? 'Map<String, dynamic>?' : 'Map<String, dynamic>?';
+//     case 'bool':
+//       return field.required ? 'bool' : 'bool?';
+//     case 'date':
+//     case 'autodate':
+//       return field.required ? 'DateTime' : 'DateTime?';
+//     case 'select':
+//       return field.required
+//           ? '${capName(removeSnake(field.name))}Enum'
+//           : '${capName(removeSnake(field.name))}Enum?';
+//     case 'relation':
+//       return field.required
+//           ? 'String'
+//           : 'String?'; //TODO: Need to check targetCollectionId, so I can build the className for the property
+//     // return field.required
+//     //     ? 'List<${getCollectionClassName(field., collections)}>'
+//     //     : 'List<${getCollectionClassName(field.targetCollectionId!, collections)}>?';
+//     default:
+//       return 'dynamic';
+//   }
+// }
