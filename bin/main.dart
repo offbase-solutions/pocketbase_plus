@@ -183,6 +183,7 @@ void generateModels(List<CollectionModel> collections, String outputDirectory) {
     File(filePath).writeAsStringSync(modelContent);
   }
   generateGeoPointModel(outputDirectory);
+  generateBarrelFile(collections, outputDirectory);
 }
 
 String camelCaseToSnakeCase(String camelCaseString) {
@@ -381,15 +382,28 @@ void generateGeoPointModel(String outputDirectory) {
   File(filePath).writeAsStringSync(buffer.toString());
 }
 
-// void generateJsonFactoryConstructor(
-//     StringBuffer buffer, CollectionModel collection) {
-//   String className = createCollectionClassName(collection.name);
+/// Generates a barrel file (index.dart) that exports all generated collection models.
+void generateBarrelFile(
+    List<CollectionModel> collections, String outputDirectory) {
+  final buffer = StringBuffer();
+  buffer.writeln('// Auto-generated barrel file. Do not edit manually.');
+  buffer.writeln('// Export all PocketBase data models');
+  buffer.writeln();
 
-//   buffer.writeln(
-//       "\n    factory $className.fromJson(Map<String, dynamic> json) => _\$${className}FromJson(json);");
-//   buffer.writeln(
-//       "\n    Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
-// }
+  // Export GeoPoint model first (if any collection uses geoPoint fields)
+  buffer.writeln("export 'geo_point_pb_data.dart';");
+  buffer.writeln();
+
+  // Export each collection model
+  for (var collection in collections) {
+    if (collection.name.startsWith('_')) continue; // skip internal collections
+    final fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
+    buffer.writeln("export '${fileName}_pb_data.dart';");
+  }
+
+  final barrelPath = pp.join(outputDirectory, 'dto_generated.dart');
+  File(barrelPath).writeAsStringSync(buffer.toString());
+}
 
 void generateJsonFactoryConstructor(
     StringBuffer buffer, CollectionModel collection) {
