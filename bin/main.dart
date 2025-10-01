@@ -202,10 +202,10 @@ Future<List<ExpansionMapping>> loadExpansionMappings(PocketBase pb) async {
     final expansions = await pb.collection('_expansions').getFullList();
     return expansions.map((record) {
       return ExpansionMapping(
-        sourceCollectionName: record.data['source_collection_name'] as String,
-        sourceFieldName: record.data['source_field_name'] as String,
-        isSingle: record.data['is_single'] as bool,
-        targetCollectionName: record.data['target_collection_name'] as String,
+        sourceCollectionName: record.data['sourceCollectionName'] as String,
+        sourceFieldName: record.data['sourceFieldName'] as String,
+        isSingle: record.data['isSingle'] as bool,
+        targetCollectionName: record.data['targetCollectionName'] as String,
       );
     }).toList();
   } catch (e) {
