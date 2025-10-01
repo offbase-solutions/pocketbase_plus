@@ -8,6 +8,67 @@ import 'package:args/args.dart';
 /// Entry point of the application
 /// Authenticates with PocketBase and generates Dart models for collections.
 Future<void> main(List<String> arguments) async {
+  // final parser = ArgParser()
+  //   ..addOption(
+  //     'config',
+  //     abbr: 'c',
+  //     defaultsTo: './pocketbase.yaml',
+  //     help: 'Configuration file path.',
+  //   )
+  //   ..addFlag(
+  //     'help',
+  //     abbr: 'h',
+  //     negatable: false,
+  //     help: 'Show help information.',
+  //   );
+
+  // final argResults = parser.parse(arguments);
+
+  // if (argResults['help'] as bool) {
+  //   printHelp(parser);
+  //   exit(0);
+  // }
+
+  // final configPath = argResults['config'] as String;
+
+  // print('Loading configuration from $configPath');
+  // Config config;
+  // try {
+  //   config = loadConfiguration(configPath);
+  // } catch (e) {
+  //   print('Error loading configuration: $e');
+  //   printHelp(parser);
+  //   exit(1);
+  // }
+
+  // print('Authenticating with PocketBase');
+  // final pb = PocketBase(config.domain);
+
+  // try {
+  //   await authenticate(
+  //     pb,
+  //     config.email,
+  //     config.password,
+  //   );
+  // } catch (e) {
+  //   print('Authentication failed: $e');
+  //   print('Please check your email and password in the configuration file.');
+  //   exit(1);
+  // }
+
+  // print('Fetching collections from PocketBase');
+  // final collections = await pb.collections.getFullList();
+
+  // print('Creating models directory at ${config.outputDirectory}');
+  // createModelsDirectory(config.outputDirectory);
+
+  // print('Generating models');
+  // generateModels(collections, config.outputDirectory);
+
+  // print('Formatting generated models');
+  // formatGeneratedModels(config.outputDirectory);
+
+  // print('Done');
   final parser = ArgParser()
     ..addOption(
       'config',
@@ -59,11 +120,14 @@ Future<void> main(List<String> arguments) async {
   print('Fetching collections from PocketBase');
   final collections = await pb.collections.getFullList();
 
+  print('Loading expansion mappings');
+  final expansionMappings = await loadExpansionMappings(pb);
+
   print('Creating models directory at ${config.outputDirectory}');
   createModelsDirectory(config.outputDirectory);
 
   print('Generating models');
-  generateModels(collections, config.outputDirectory);
+  generateModels(collections, config.outputDirectory, expansionMappings);
 
   print('Formatting generated models');
   formatGeneratedModels(config.outputDirectory);
@@ -114,6 +178,39 @@ class Config {
       password: password,
       outputDirectory: outputDirectory,
     );
+  }
+}
+
+/// Represents an expansion mapping for a collection field
+class ExpansionMapping {
+  final String sourceCollectionName;
+  final String sourceFieldName;
+  final bool isSingle;
+  final String targetCollectionName;
+
+  ExpansionMapping({
+    required this.sourceCollectionName,
+    required this.sourceFieldName,
+    required this.isSingle,
+    required this.targetCollectionName,
+  });
+}
+
+/// Loads expansion mappings from the _expansions collection
+Future<List<ExpansionMapping>> loadExpansionMappings(PocketBase pb) async {
+  try {
+    final expansions = await pb.collection('_expansions').getFullList();
+    return expansions.map((record) {
+      return ExpansionMapping(
+        sourceCollectionName: record.data['source_collection_name'] as String,
+        sourceFieldName: record.data['source_field_name'] as String,
+        isSingle: record.data['is_single'] as bool,
+        targetCollectionName: record.data['target_collection_name'] as String,
+      );
+    }).toList();
+  } catch (e) {
+    print('Warning: Could not load expansion mappings: $e');
+    return [];
   }
 }
 
@@ -171,14 +268,37 @@ void createModelsDirectory(String path) {
 }
 
 /// Generates Dart models for all collections.
-void generateModels(List<CollectionModel> collections, String outputDirectory) {
+// void generateModels(List<CollectionModel> collections, String outputDirectory) {
+//   for (var collection in collections) {
+//     // Skip collections whose name starts with an underscore
+//     if (collection.name.startsWith('_')) {
+//       continue;
+//     }
+//     String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
+//     final modelContent = generateModelForCollection(collection, collections);
+//     final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
+//     File(filePath).writeAsStringSync(modelContent);
+//   }
+//   generateGeoPointModel(outputDirectory);
+//   generateBarrelFile(collections, outputDirectory);
+// }
+
+// REPLACE the existing generateModels function with this
+void generateModels(
+  List<CollectionModel> collections,
+  String outputDirectory,
+  List<ExpansionMapping> expansionMappings,
+) {
   for (var collection in collections) {
-    // Skip collections whose name starts with an underscore
     if (collection.name.startsWith('_')) {
       continue;
     }
     String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-    final modelContent = generateModelForCollection(collection, collections);
+    final modelContent = generateModelForCollection(
+      collection,
+      collections,
+      expansionMappings,
+    );
     final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
     File(filePath).writeAsStringSync(modelContent);
   }
@@ -259,11 +379,54 @@ String singularizeWord(String pluralWord) {
 }
 
 /// Generates the Dart model code for a single collection.
+// String generateModelForCollection(
+//     CollectionModel collection, List<CollectionModel> collections) {
+//   final buffer = StringBuffer();
+//   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
+//   String className = createCollectionClassName(collection.name);
+//   // Add file documentation and imports
+//   buffer.writeln('// This file is auto-generated. Do not modify manually.');
+//   buffer.writeln('// Model for collection ${collection.name}');
+//   buffer.writeln('// ignore_for_file: constant_identifier_names');
+//   buffer.writeln();
+//   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
+//   buffer.writeln("part '${fileName}_data.g.dart';");
+//   buffer.writeln();
+
+//   // Add enums for 'select' fields
+//   for (var field in collection.fields) {
+//     if (field.type == 'select') {
+//       generateEnumForField(buffer, field);
+//     }
+//   }
+
+//   // Add class declaration
+//   buffer.writeln("@JsonSerializable()");
+//   buffer.writeln("class $className {");
+
+//   generateClassFields(buffer, collection.fields, collections);
+//   generateConstructor(collection.name, buffer, collection.fields);
+//   generateJsonFactoryConstructor(buffer, collection);
+
+//   buffer.writeln("}"); // Close class
+
+//   return buffer.toString();
+// }
+
 String generateModelForCollection(
-    CollectionModel collection, List<CollectionModel> collections) {
+  CollectionModel collection,
+  List<CollectionModel> collections,
+  List<ExpansionMapping> expansionMappings,
+) {
   final buffer = StringBuffer();
   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
   String className = createCollectionClassName(collection.name);
+
+  // Get expansions for this collection
+  final collectionExpansions = expansionMappings
+      .where((e) => e.sourceCollectionName == collection.name)
+      .toList();
+
   // Add file documentation and imports
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
   buffer.writeln('// Model for collection ${collection.name}');
@@ -285,12 +448,81 @@ String generateModelForCollection(
   buffer.writeln("class $className {");
 
   generateClassFields(buffer, collection.fields, collections);
-  generateConstructor(collection.name, buffer, collection.fields);
+
+  // Add expand property if there are expansions
+  if (collectionExpansions.isNotEmpty) {
+    buffer.writeln();
+    buffer.writeln("  @JsonKey(name: 'expand')");
+    buffer.writeln("  final ${className}Expand? expand;");
+  }
+
+  generateConstructor(
+    collection.name,
+    buffer,
+    collection.fields,
+    collectionExpansions.isNotEmpty,
+  );
   generateJsonFactoryConstructor(buffer, collection);
 
   buffer.writeln("}"); // Close class
+  buffer.writeln();
+
+  // Generate expand class if needed
+  if (collectionExpansions.isNotEmpty) {
+    generateExpandClass(
+      buffer,
+      collection,
+      collectionExpansions,
+      collections,
+    );
+  }
 
   return buffer.toString();
+}
+
+// NEW function to generate the expand class
+void generateExpandClass(
+  StringBuffer buffer,
+  CollectionModel collection,
+  List<ExpansionMapping> expansions,
+  List<CollectionModel> collections,
+) {
+  String className = createCollectionClassName(collection.name);
+  String expandClassName = '${className}Expand';
+
+  buffer.writeln("@JsonSerializable()");
+  buffer.writeln("class $expandClassName {");
+
+  // Generate fields for each expansion
+  for (var expansion in expansions) {
+    String targetClassName =
+        createCollectionClassName(expansion.targetCollectionName);
+    String fieldType =
+        expansion.isSingle ? '$targetClassName?' : 'List<$targetClassName>?';
+
+    buffer.writeln("  @JsonKey(name: '${expansion.sourceFieldName}')");
+    buffer.writeln(
+        "  final $fieldType ${removeSnake(expansion.sourceFieldName)};");
+    buffer.writeln();
+  }
+
+  // Constructor
+  buffer.writeln("  const $expandClassName({");
+  for (var expansion in expansions) {
+    buffer.writeln("    this.${removeSnake(expansion.sourceFieldName)},");
+  }
+  buffer.writeln("  });");
+  buffer.writeln();
+
+  // JSON methods
+  buffer.writeln(
+      "  factory $expandClassName.fromJson(Map<String, dynamic> json) =>");
+  buffer.writeln("      _\$${expandClassName}FromJson(json);");
+  buffer.writeln();
+  buffer.writeln(
+      "  Map<String, dynamic> toJson() => _\$${expandClassName}ToJson(this);");
+
+  buffer.writeln("}");
 }
 
 /// Generates an enum for a 'select' field in the collection schema.
@@ -336,13 +568,31 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema,
 }
 
 /// Generates the constructor for the class.
+// void generateConstructor(
+//     String colName, StringBuffer buffer, List<CollectionField> schema) {
+//   String className = createCollectionClassName(colName);
+//   buffer.writeln("\n  const $className({");
+//   for (var field in schema) {
+//     buffer.writeln(
+//         "${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
+//   }
+//   buffer.writeln("  });");
+// }
+
 void generateConstructor(
-    String colName, StringBuffer buffer, List<CollectionField> schema) {
+  String colName,
+  StringBuffer buffer,
+  List<CollectionField> schema,
+  bool hasExpand,
+) {
   String className = createCollectionClassName(colName);
   buffer.writeln("\n  const $className({");
   for (var field in schema) {
     buffer.writeln(
         "${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
+  }
+  if (hasExpand) {
+    buffer.writeln("    this.expand,");
   }
   buffer.writeln("  });");
 }
@@ -370,8 +620,8 @@ void generateGeoPointModel(String outputDirectory) {
   buffer.writeln('    required this.latitude,');
   buffer.writeln('  });');
   buffer.writeln();
-  buffer.writeln(
-      '  factory GeoPointData.fromJson(Map<String, dynamic> json) =>');
+  buffer
+      .writeln('  factory GeoPointData.fromJson(Map<String, dynamic> json) =>');
   buffer.writeln('      _\$GeoPointDataFromJson(json);');
   buffer.writeln();
   buffer.writeln(
