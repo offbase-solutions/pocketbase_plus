@@ -413,6 +413,73 @@ String singularizeWord(String pluralWord) {
 //   return buffer.toString();
 // }
 
+// String generateModelForCollection(
+//   CollectionModel collection,
+//   List<CollectionModel> collections,
+//   List<ExpansionMapping> expansionMappings,
+// ) {
+//   final buffer = StringBuffer();
+//   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
+//   String className = createCollectionClassName(collection.name);
+
+//   // Get expansions for this collection
+//   final collectionExpansions = expansionMappings
+//       .where((e) => e.sourceCollectionName == collection.name)
+//       .toList();
+
+//   // Add file documentation and imports
+//   buffer.writeln('// This file is auto-generated. Do not modify manually.');
+//   buffer.writeln('// Model for collection ${collection.name}');
+//   buffer.writeln('// ignore_for_file: constant_identifier_names');
+//   buffer.writeln();
+//   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
+//   buffer.writeln("part '${fileName}_data.g.dart';");
+//   buffer.writeln();
+
+//   // Add enums for 'select' fields
+//   for (var field in collection.fields) {
+//     if (field.type == 'select') {
+//       generateEnumForField(buffer, field);
+//     }
+//   }
+
+//   // Add class declaration
+//   buffer.writeln("@JsonSerializable()");
+//   buffer.writeln("class $className {");
+
+//   generateClassFields(buffer, collection.fields, collections);
+
+//   // Add expand property if there are expansions
+//   if (collectionExpansions.isNotEmpty) {
+//     buffer.writeln();
+//     buffer.writeln("  @JsonKey(name: 'expand')");
+//     buffer.writeln("  final ${className}Expand? expand;");
+//   }
+
+//   generateConstructor(
+//     collection.name,
+//     buffer,
+//     collection.fields,
+//     collectionExpansions.isNotEmpty,
+//   );
+//   generateJsonFactoryConstructor(buffer, collection);
+
+//   buffer.writeln("}"); // Close class
+//   buffer.writeln();
+
+//   // Generate expand class if needed
+//   if (collectionExpansions.isNotEmpty) {
+//     generateExpandClass(
+//       buffer,
+//       collection,
+//       collectionExpansions,
+//       collections,
+//     );
+//   }
+
+//   return buffer.toString();
+// }
+
 String generateModelForCollection(
   CollectionModel collection,
   List<CollectionModel> collections,
@@ -421,18 +488,37 @@ String generateModelForCollection(
   final buffer = StringBuffer();
   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
   String className = createCollectionClassName(collection.name);
-
+  
   // Get expansions for this collection
   final collectionExpansions = expansionMappings
       .where((e) => e.sourceCollectionName == collection.name)
       .toList();
-
+  
   // Add file documentation and imports
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
   buffer.writeln('// Model for collection ${collection.name}');
   buffer.writeln('// ignore_for_file: constant_identifier_names');
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
+  
+  // Import related collection models for expand
+  if (collectionExpansions.isNotEmpty) {
+    final importedCollections = <String>{};
+    for (var expansion in collectionExpansions) {
+      String targetFileName = camelCaseToSnakeCase(
+        singularizeWord(expansion.targetCollectionName)
+      );
+      // Avoid importing self
+      if (targetFileName != fileName) {
+        importedCollections.add("import '${targetFileName}_data.dart';");
+      }
+    }
+    // Add imports in sorted order for consistency
+    for (var import in importedCollections.toList()..sort()) {
+      buffer.writeln(import);
+    }
+  }
+  
   buffer.writeln("part '${fileName}_data.g.dart';");
   buffer.writeln();
 
@@ -448,7 +534,7 @@ String generateModelForCollection(
   buffer.writeln("class $className {");
 
   generateClassFields(buffer, collection.fields, collections);
-
+  
   // Add expand property if there are expansions
   if (collectionExpansions.isNotEmpty) {
     buffer.writeln();
