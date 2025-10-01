@@ -179,7 +179,7 @@ void generateModels(List<CollectionModel> collections, String outputDirectory) {
     }
     String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
     final modelContent = generateModelForCollection(collection, collections);
-    final filePath = pp.join(outputDirectory, '${fileName}_pb_data.dart');
+    final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
     File(filePath).writeAsStringSync(modelContent);
   }
   generateGeoPointModel(outputDirectory);
@@ -271,7 +271,7 @@ String generateModelForCollection(
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
   buffer.writeln("import 'package:pocketbase/pocketbase.dart';");
-  buffer.writeln("part '${fileName}_pb_data.g.dart';");
+  buffer.writeln("part '${fileName}_data.g.dart';");
   buffer.writeln();
 
   // Add enums for 'select' fields
@@ -348,7 +348,7 @@ void generateConstructor(
   buffer.writeln("  });");
 }
 
-/// Generates a standalone GeoPoint model file (geo_point_pb_data.dart) for PocketBase geopoint fields.
+/// Generates a standalone GeoPoint model file (geo_point_data.dart) for PocketBase geopoint fields.
 void generateGeoPointModel(String outputDirectory) {
   final buffer = StringBuffer();
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
@@ -357,28 +357,28 @@ void generateGeoPointModel(String outputDirectory) {
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
   buffer.writeln();
-  buffer.writeln("part 'geo_point_pb_data.g.dart';");
+  buffer.writeln("part 'geo_point_data.g.dart';");
   buffer.writeln();
   buffer.writeln('@JsonSerializable()');
-  buffer.writeln('class GeoPointPbData {');
+  buffer.writeln('class GeoPointData {');
   buffer.writeln('  @JsonKey(name: \'lon\')');
   buffer.writeln('  final double longitude;');
   buffer.writeln('  @JsonKey(name: \'lat\')');
   buffer.writeln('  final double latitude;');
   buffer.writeln();
-  buffer.writeln('  const GeoPointPbData({');
+  buffer.writeln('  const GeoPointData({');
   buffer.writeln('    required this.longitude,');
   buffer.writeln('    required this.latitude,');
   buffer.writeln('  });');
   buffer.writeln();
   buffer.writeln(
-      '  factory GeoPointPbData.fromJson(Map<String, dynamic> json) =>');
-  buffer.writeln('      _\$GeoPointPbDataFromJson(json);');
+      '  factory GeoPointData.fromJson(Map<String, dynamic> json) =>');
+  buffer.writeln('      _\$GeoPointDataFromJson(json);');
   buffer.writeln();
   buffer.writeln(
-      '  Map<String, dynamic> toJson() => _\$GeoPointPbDataToJson(this);');
+      '  Map<String, dynamic> toJson() => _\$GeoPointDataToJson(this);');
   buffer.writeln('}');
-  final filePath = pp.join(outputDirectory, 'geo_point_pb_data.dart');
+  final filePath = pp.join(outputDirectory, 'geo_point_data.dart');
   File(filePath).writeAsStringSync(buffer.toString());
 }
 
@@ -391,14 +391,14 @@ void generateBarrelFile(
   buffer.writeln();
 
   // Export GeoPoint model first (if any collection uses geoPoint fields)
-  buffer.writeln("export 'geo_point_pb_data.dart';");
+  buffer.writeln("export 'geo_point_data.dart';");
   buffer.writeln();
 
   // Export each collection model
   for (var collection in collections) {
     if (collection.name.startsWith('_')) continue; // skip internal collections
     final fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-    buffer.writeln("export '${fileName}_pb_data.dart';");
+    buffer.writeln("export '${fileName}_data.dart';");
   }
 
   final barrelPath = pp.join(outputDirectory, 'dto_generated.dart');
@@ -445,7 +445,7 @@ String getCollectionClassName(
 
 /// Creates the class name for a collection based on its name.
 String createCollectionClassName(String collectionName) {
-  return "${removeSnake(capName(singularizeWord(collectionName)))}PbData";
+  return "${removeSnake(capName(singularizeWord(collectionName)))}Data";
 }
 
 /// Maps the schema field type to a Dart type.
@@ -457,7 +457,7 @@ String getType(CollectionField field, List<CollectionModel> collections) {
     case 'url':
       return field.required ? 'String' : 'String?';
     case 'geoPoint':
-      return field.required ? 'GeoPointPbData' : 'GeoPointPbData?';
+      return field.required ? 'GeoPointData' : 'GeoPointData?';
     case 'number':
       return field.required ? 'num' : 'num?';
     case 'json':
