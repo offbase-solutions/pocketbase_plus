@@ -270,7 +270,6 @@ String generateModelForCollection(
   buffer.writeln('// ignore_for_file: constant_identifier_names');
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
-  buffer.writeln("import 'package:pocketbase/pocketbase.dart';");
   buffer.writeln("part '${fileName}_data.g.dart';");
   buffer.writeln();
 
