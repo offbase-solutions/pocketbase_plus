@@ -8,65 +8,6 @@ import 'package:args/args.dart';
 /// Entry point of the application
 /// Authenticates with PocketBase and generates Dart models for collections.
 Future<void> main(List<String> arguments) async {
-  // final parser = ArgParser()
-  //   ..addOption(
-  //     'config',
-  //     abbr: 'c',
-  //     defaultsTo: './pocketbase.yaml',
-  //     help: 'Configuration file path.',
-  //   )
-  //   ..addFlag(
-  //     'help',
-  //     abbr: 'h',
-  //     negatable: false,
-  //     help: 'Show help information.',
-  //   );
-
-  // final argResults = parser.parse(arguments);
-
-  // if (argResults['help'] as bool) {
-  //   printHelp(parser);
-  //   exit(0);
-  // }
-
-  // final configPath = argResults['config'] as String;
-
-  // print('Loading configuration from $configPath');
-  // Config config;
-  // try {
-  //   config = loadConfiguration(configPath);
-  // } catch (e) {
-  //   print('Error loading configuration: $e');
-  //   printHelp(parser);
-  //   exit(1);
-  // }
-
-  // print('Authenticating with PocketBase');
-  // final pb = PocketBase(config.domain);
-
-  // try {
-  //   await authenticate(
-  //     pb,
-  //     config.email,
-  //     config.password,
-  //   );
-  // } catch (e) {
-  //   print('Authentication failed: $e');
-  //   print('Please check your email and password in the configuration file.');
-  //   exit(1);
-  // }
-
-  // print('Fetching collections from PocketBase');
-  // final collections = await pb.collections.getFullList();
-
-  // print('Creating models directory at ${config.outputDirectory}');
-  // createModelsDirectory(config.outputDirectory);
-
-  // print('Generating models');
-  // generateModels(collections, config.outputDirectory);
-
-  // print('Formatting generated models');
-  // formatGeneratedModels(config.outputDirectory);
 
   // print('Done');
   final parser = ArgParser()
@@ -267,21 +208,6 @@ void createModelsDirectory(String path) {
   }
 }
 
-/// Generates Dart models for all collections.
-// void generateModels(List<CollectionModel> collections, String outputDirectory) {
-//   for (var collection in collections) {
-//     // Skip collections whose name starts with an underscore
-//     if (collection.name.startsWith('_')) {
-//       continue;
-//     }
-//     String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-//     final modelContent = generateModelForCollection(collection, collections);
-//     final filePath = pp.join(outputDirectory, '${fileName}_data.dart');
-//     File(filePath).writeAsStringSync(modelContent);
-//   }
-//   generateGeoPointModel(outputDirectory);
-//   generateBarrelFile(collections, outputDirectory);
-// }
 
 // REPLACE the existing generateModels function with this
 void generateModels(
@@ -378,108 +304,6 @@ String singularizeWord(String pluralWord) {
   return pluralWord;
 }
 
-/// Generates the Dart model code for a single collection.
-// String generateModelForCollection(
-//     CollectionModel collection, List<CollectionModel> collections) {
-//   final buffer = StringBuffer();
-//   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-//   String className = createCollectionClassName(collection.name);
-//   // Add file documentation and imports
-//   buffer.writeln('// This file is auto-generated. Do not modify manually.');
-//   buffer.writeln('// Model for collection ${collection.name}');
-//   buffer.writeln('// ignore_for_file: constant_identifier_names');
-//   buffer.writeln();
-//   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
-//   buffer.writeln("part '${fileName}_data.g.dart';");
-//   buffer.writeln();
-
-//   // Add enums for 'select' fields
-//   for (var field in collection.fields) {
-//     if (field.type == 'select') {
-//       generateEnumForField(buffer, field);
-//     }
-//   }
-
-//   // Add class declaration
-//   buffer.writeln("@JsonSerializable()");
-//   buffer.writeln("class $className {");
-
-//   generateClassFields(buffer, collection.fields, collections);
-//   generateConstructor(collection.name, buffer, collection.fields);
-//   generateJsonFactoryConstructor(buffer, collection);
-
-//   buffer.writeln("}"); // Close class
-
-//   return buffer.toString();
-// }
-
-// String generateModelForCollection(
-//   CollectionModel collection,
-//   List<CollectionModel> collections,
-//   List<ExpansionMapping> expansionMappings,
-// ) {
-//   final buffer = StringBuffer();
-//   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
-//   String className = createCollectionClassName(collection.name);
-
-//   // Get expansions for this collection
-//   final collectionExpansions = expansionMappings
-//       .where((e) => e.sourceCollectionName == collection.name)
-//       .toList();
-
-//   // Add file documentation and imports
-//   buffer.writeln('// This file is auto-generated. Do not modify manually.');
-//   buffer.writeln('// Model for collection ${collection.name}');
-//   buffer.writeln('// ignore_for_file: constant_identifier_names');
-//   buffer.writeln();
-//   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
-//   buffer.writeln("part '${fileName}_data.g.dart';");
-//   buffer.writeln();
-
-//   // Add enums for 'select' fields
-//   for (var field in collection.fields) {
-//     if (field.type == 'select') {
-//       generateEnumForField(buffer, field);
-//     }
-//   }
-
-//   // Add class declaration
-//   buffer.writeln("@JsonSerializable()");
-//   buffer.writeln("class $className {");
-
-//   generateClassFields(buffer, collection.fields, collections);
-
-//   // Add expand property if there are expansions
-//   if (collectionExpansions.isNotEmpty) {
-//     buffer.writeln();
-//     buffer.writeln("  @JsonKey(name: 'expand')");
-//     buffer.writeln("  final ${className}Expand? expand;");
-//   }
-
-//   generateConstructor(
-//     collection.name,
-//     buffer,
-//     collection.fields,
-//     collectionExpansions.isNotEmpty,
-//   );
-//   generateJsonFactoryConstructor(buffer, collection);
-
-//   buffer.writeln("}"); // Close class
-//   buffer.writeln();
-
-//   // Generate expand class if needed
-//   if (collectionExpansions.isNotEmpty) {
-//     generateExpandClass(
-//       buffer,
-//       collection,
-//       collectionExpansions,
-//       collections,
-//     );
-//   }
-
-//   return buffer.toString();
-// }
-
 String generateModelForCollection(
   CollectionModel collection,
   List<CollectionModel> collections,
@@ -532,6 +356,10 @@ String generateModelForCollection(
   // Add class declaration
   buffer.writeln("@JsonSerializable()");
   buffer.writeln("class $className {");
+
+  // Add collection metadata as static constants
+  buffer.writeln("  static const String collectionId = '${collection.id}';");
+  buffer.writeln("  static const String collectionName = '${collection.name}';");
 
   generateClassFields(buffer, collection.fields, collections);
   
@@ -652,18 +480,6 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema,
     buffer.writeln("   final $fieldType ${removeSnake(field.name)};");
   }
 }
-
-/// Generates the constructor for the class.
-// void generateConstructor(
-//     String colName, StringBuffer buffer, List<CollectionField> schema) {
-//   String className = createCollectionClassName(colName);
-//   buffer.writeln("\n  const $className({");
-//   for (var field in schema) {
-//     buffer.writeln(
-//         "${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
-//   }
-//   buffer.writeln("  });");
-// }
 
 void generateConstructor(
   String colName,
@@ -855,38 +671,3 @@ String getType(CollectionField field, List<CollectionModel> collections) {
       return 'dynamic';
   }
 }
-
-/// Maps the schema field type to a Dart type.
-// String getType(CollectionField field, List<CollectionModel> collections) {
-//   switch (field.type) {
-//     case 'text':
-//     case 'file':
-//     case 'email':
-//     case 'url':
-//       return field.required ? 'String' : 'String?';
-//     case 'geoPoint':
-//       return field.required ? 'GeoPointData' : 'GeoPointData?';
-//     case 'number':
-//       return field.required ? 'num' : 'num?';
-//     case 'json':
-//       return field.required ? 'Map<String, dynamic>?' : 'Map<String, dynamic>?';
-//     case 'bool':
-//       return field.required ? 'bool' : 'bool?';
-//     case 'date':
-//     case 'autodate':
-//       return field.required ? 'DateTime' : 'DateTime?';
-//     case 'select':
-//       return field.required
-//           ? '${capName(removeSnake(field.name))}Enum'
-//           : '${capName(removeSnake(field.name))}Enum?';
-//     case 'relation':
-//       return field.required
-//           ? 'String'
-//           : 'String?'; //TODO: Need to check targetCollectionId, so I can build the className for the property
-//     // return field.required
-//     //     ? 'List<${getCollectionClassName(field., collections)}>'
-//     //     : 'List<${getCollectionClassName(field.targetCollectionId!, collections)}>?';
-//     default:
-//       return 'dynamic';
-//   }
-// }
