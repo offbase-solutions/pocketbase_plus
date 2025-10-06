@@ -357,11 +357,13 @@ String generateModelForCollection(
   buffer.writeln("@JsonSerializable()");
   buffer.writeln("class $className {");
 
-  // Add collection metadata as static constants
-  buffer.writeln("  static const String collectionId = '${collection.id}';");
-  buffer.writeln("  static const String collectionName = '${collection.name}';");
-
   generateClassFields(buffer, collection.fields, collections);
+
+  // Add collection metadata as instance properties
+  buffer.writeln("\n  @JsonKey(includeFromJson: false, includeToJson: false)");
+  buffer.writeln("  final String collectionId = '${collection.id}';");
+  buffer.writeln("  @JsonKey(includeFromJson: false, includeToJson: false)");
+  buffer.writeln("  final String collectionName = '${collection.name}';");
   
   // Add expand property if there are expansions
   if (collectionExpansions.isNotEmpty) {
