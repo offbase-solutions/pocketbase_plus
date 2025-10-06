@@ -840,7 +840,17 @@ String getType(CollectionField field, List<CollectionModel> collections) {
           ? '${capName(removeSnake(field.name))}Enum'
           : '${capName(removeSnake(field.name))}Enum?';
     case 'relation':
-      return field.required ? 'String' : 'String?';
+      // Check if it's a single or multiple relation
+      final maxSelect = field.data['maxSelect'] as int?;
+      final isSingle = maxSelect == 1;
+
+      if (isSingle) {
+        // Single relation: returns a string ID
+        return field.required ? 'String' : 'String?';
+      } else {
+        // Multiple relation: returns array of string IDs
+        return field.required ? 'List<String>' : 'List<String>?';
+      }
     default:
       return 'dynamic';
   }
