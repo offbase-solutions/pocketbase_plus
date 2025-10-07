@@ -8,7 +8,6 @@ import 'package:args/args.dart';
 /// Entry point of the application
 /// Authenticates with PocketBase and generates Dart models for collections.
 Future<void> main(List<String> arguments) async {
-
   // print('Done');
   final parser = ArgParser()
     ..addOption(
@@ -208,7 +207,6 @@ void createModelsDirectory(String path) {
   }
 }
 
-
 // REPLACE the existing generateModels function with this
 void generateModels(
   List<CollectionModel> collections,
@@ -312,26 +310,25 @@ String generateModelForCollection(
   final buffer = StringBuffer();
   String fileName = camelCaseToSnakeCase(singularizeWord(collection.name));
   String className = createCollectionClassName(collection.name);
-  
+
   // Get expansions for this collection
   final collectionExpansions = expansionMappings
       .where((e) => e.sourceCollectionName == collection.name)
       .toList();
-  
+
   // Add file documentation and imports
   buffer.writeln('// This file is auto-generated. Do not modify manually.');
   buffer.writeln('// Model for collection ${collection.name}');
   buffer.writeln('// ignore_for_file: constant_identifier_names');
   buffer.writeln();
   buffer.writeln("import 'package:json_annotation/json_annotation.dart';");
-  
+
   // Import related collection models for expand
   if (collectionExpansions.isNotEmpty) {
     final importedCollections = <String>{};
     for (var expansion in collectionExpansions) {
-      String targetFileName = camelCaseToSnakeCase(
-        singularizeWord(expansion.targetCollectionName)
-      );
+      String targetFileName =
+          camelCaseToSnakeCase(singularizeWord(expansion.targetCollectionName));
       // Avoid importing self
       if (targetFileName != fileName) {
         importedCollections.add("import '${targetFileName}_data.dart';");
@@ -342,7 +339,7 @@ String generateModelForCollection(
       buffer.writeln(import);
     }
   }
-  
+
   buffer.writeln("part '${fileName}_data.g.dart';");
   buffer.writeln();
 
@@ -364,7 +361,7 @@ String generateModelForCollection(
   buffer.writeln("  final String collectionId = '${collection.id}';");
   buffer.writeln("  @JsonKey(includeFromJson: false, includeToJson: false)");
   buffer.writeln("  final String collectionName = '${collection.name}';");
-  
+
   // Add expand property if there are expansions
   if (collectionExpansions.isNotEmpty) {
     buffer.writeln();
@@ -636,6 +633,7 @@ String getType(CollectionField field, List<CollectionModel> collections) {
     case 'text':
     case 'file':
     case 'email':
+    case 'password':
     case 'url':
       return field.required ? 'String' : 'String?';
     case 'geoPoint':
