@@ -351,8 +351,8 @@ String generateModelForCollection(
   }
 
   // Add class declaration
-  // buffer.writeln("@JsonSerializable()");
-  buffer.writeln("@JsonSerializable(copyWith: true)");
+  buffer.writeln("@JsonSerializable()");
+  // buffer.writeln("@JsonSerializable(copyWith: true)");
   buffer.writeln("class $className {");
 
   generateClassFields(buffer, collection.fields, collections);
