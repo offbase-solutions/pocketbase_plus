@@ -359,7 +359,7 @@ String generateModelForCollection(
 
   // Add collection metadata as instance properties
   buffer.writeln("\n  @JsonKey(includeFromJson: false, includeToJson: false)");
-  buffer.writeln("  final String collectionId = '${collection.id}';");
+  buffer.writeln(" final String collectionId = '${collection.id}';");
   buffer.writeln("\n  @JsonKey(includeFromJson: false, includeToJson: false)");
   buffer.writeln("  final String collectionName = '${collection.name}';");
 
@@ -493,7 +493,7 @@ void generateConstructor(
   buffer.writeln("\n  const $className({");
   for (var field in schema) {
     buffer.writeln(
-        "${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
+        "    ${field.required ? 'required' : ''} this.${removeSnake(field.name)},");
   }
   if (hasExpand) {
     buffer.writeln("    this.expand,");
@@ -565,9 +565,8 @@ void generateJsonFactoryConstructor(
   buffer.writeln(
       "\n  factory $className.fromJson(Map<String, dynamic> json) => _\$${className}FromJson(json);");
   buffer.writeln(
-      "  Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
+      "\n   Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
 }
-
 
 /// Capitalizes the first letter of a string.
 String capName(String str) {
