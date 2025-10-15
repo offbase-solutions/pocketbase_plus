@@ -351,7 +351,8 @@ String generateModelForCollection(
   }
 
   // Add class declaration
-  buffer.writeln("@JsonSerializable()");
+  // buffer.writeln("@JsonSerializable()");
+  buffer.writeln("@JsonSerializable(copyWith: true)");
   buffer.writeln("class $className {");
 
   generateClassFields(buffer, collection.fields, collections);
@@ -359,7 +360,7 @@ String generateModelForCollection(
   // Add collection metadata as instance properties
   buffer.writeln("\n  @JsonKey(includeFromJson: false, includeToJson: false)");
   buffer.writeln("  final String collectionId = '${collection.id}';");
-  buffer.writeln("  @JsonKey(includeFromJson: false, includeToJson: false)");
+  buffer.writeln("\n  @JsonKey(includeFromJson: false, includeToJson: false)");
   buffer.writeln("  final String collectionName = '${collection.name}';");
 
   // Add expand property if there are expansions
@@ -477,6 +478,8 @@ void generateClassFields(StringBuffer buffer, List<CollectionField> schema,
     String requiredString = field.required ? ", required: true" : "";
     buffer.writeln("\n  @JsonKey(name: '${field.name}'$requiredString)");
     buffer.writeln("   final $fieldType ${removeSnake(field.name)};");
+    buffer.writeln(
+        "  static const String ${removeSnake(capName(field.name))} = '${field.name}';");
   }
 }
 
@@ -565,6 +568,7 @@ void generateJsonFactoryConstructor(
       "  Map<String, dynamic> toJson() => _\$${className}ToJson(this);");
 }
 
+
 /// Capitalizes the first letter of a string.
 String capName(String str) {
   if (str == 'date_time' || str == 'datetime' || str == 'dateTime') {
@@ -621,6 +625,7 @@ bool _isIntegerFieldName(String fieldName) {
     'width',
     'height',
     'number',
+    'score'
   ];
 
   final lowerFieldName = fieldName.toLowerCase();

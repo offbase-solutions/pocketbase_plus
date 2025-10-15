@@ -11,7 +11,7 @@ String collectionToJson(Collection data) => json.encode(data.toJson());
 
 class Collection {
   final String id;
-  final String name;
+  final String name; 
   final String type;
   final bool system;
   final List<Schema> schema;
