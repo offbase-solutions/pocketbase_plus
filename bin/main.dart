@@ -441,31 +441,32 @@ void generateExpandClass(
 
 /// Generates an enum for a 'select' field in the collection schema.
 void generateEnumForField(StringBuffer buffer, CollectionField field) {
-  // Start the enum definition with constructor
-  buffer.writeln('enum ${capName(removeSnake(field.name))}Enum {');
+  final enumName = '${capName(removeSnake(field.name))}Enum';
 
+  // Add JSON enum annotation for proper serialization
+  buffer.writeln('@JsonEnum(valueField: \'value\')');
+  buffer.writeln('enum $enumName {');
+
+  // Generate enum constants
   for (var option in field.data['values']) {
-    buffer.writeln('${removeSnake(option)}("$option"),');
+    final constantName = removeSnake(option);
+    buffer.writeln('  $constantName("$option"),');
   }
+  buffer.writeln('  ;');
+  buffer.writeln();
 
-  buffer.writeln(';\n');
-
-  // Add a final String field and the constructor
-  buffer.writeln('final String value;\n');
-  buffer
-      .writeln('const ${capName(removeSnake(field.name))}Enum(this.value);\n');
+  // Add value field and constructor
+  buffer.writeln('  final String value;');
+  buffer.writeln('  const $enumName(this.value);');
+  buffer.writeln();
 
   // Add fromValue static method
-  buffer.writeln(
-      'static ${capName(removeSnake(field.name))}Enum fromValue(String value) {');
-  buffer.writeln(
-      '  return ${capName(removeSnake(field.name))}Enum.values.firstWhere(');
-  buffer.writeln('    (enumValue) => enumValue.value == value,');
-  buffer.writeln(
-      '    orElse: () => throw ArgumentError("Invalid value: \$value"),');
-  buffer.writeln('  );');
-  buffer.writeln('}\n');
-
+  buffer.writeln('  static $enumName fromValue(String value) {');
+  buffer.writeln('    return $enumName.values.firstWhere(');
+  buffer.writeln('      (enumValue) => enumValue.value == value,');
+  buffer.writeln('      orElse: () => throw ArgumentError("Invalid value: \$value"),');
+  buffer.writeln('    );');
+  buffer.writeln('  }');
   buffer.writeln('}');
   buffer.writeln();
 }
