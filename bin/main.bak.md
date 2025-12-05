@@ -136,43 +136,18 @@ class ExpansionMapping {
   });
 }
 
-/// Loads expansion mappings from collection fields
-/// Extracts relation information from the field.data property
+/// Loads expansion mappings from the _expansions collection
 Future<List<ExpansionMapping>> loadExpansionMappings(PocketBase pb) async {
   try {
-    final collections = await pb.collections.getFullList();
-    final List<ExpansionMapping> mappings = [];
-
-    for (var collection in collections) {
-      // Skip internal collections
-      if (collection.name.startsWith('_')) continue;
-
-      for (var field in collection.fields) {
-        // Check if this field is a relation type
-        if (field.type == 'relation') {
-          final collectionId = field.data['collectionId'] as String?;
-          final maxSelect = field.data['maxSelect'] as int?;
-
-          if (collectionId != null) {
-            // Find target collection name by ID
-            final targetCollection = collections.firstWhere(
-              (c) => c.id == collectionId,
-              orElse: () =>
-                  throw Exception('Collection with ID $collectionId not found'),
-            );
-
-            mappings.add(ExpansionMapping(
-              sourceCollectionName: collection.name,
-              sourceFieldName: field.name,
-              isSingle: maxSelect == 1,
-              targetCollectionName: targetCollection.name,
-            ));
-          }
-        }
-      }
-    }
-
-    return mappings;
+    final expansions = await pb.collection('_expansions').getFullList();
+    return expansions.map((record) {
+      return ExpansionMapping(
+        sourceCollectionName: record.data['sourceCollectionName'] as String,
+        sourceFieldName: record.data['sourceFieldName'] as String,
+        isSingle: record.data['isSingle'] as bool,
+        targetCollectionName: record.data['targetCollectionName'] as String,
+      );
+    }).toList();
   } catch (e) {
     print('Warning: Could not load expansion mappings: $e');
     return [];
@@ -221,8 +196,7 @@ pocketbase:
 
 /// Authenticates an admin user with PocketBase.
 Future<void> authenticate(PocketBase pb, String email, String password) async {
-  // await pb.admins.authWithPassword(email, password);
-  await pb.collection('_superusers').authWithPassword(email, password);
+  await pb.admins.authWithPassword(email, password);
 }
 
 /// Ensures that the models directory exists; creates it if not.
@@ -490,8 +464,7 @@ void generateEnumForField(StringBuffer buffer, CollectionField field) {
   buffer.writeln('  static $enumName fromValue(String value) {');
   buffer.writeln('    return $enumName.values.firstWhere(');
   buffer.writeln('      (enumValue) => enumValue.value == value,');
-  buffer.writeln(
-      '      orElse: () => throw ArgumentError("Invalid value: \$value"),');
+  buffer.writeln('      orElse: () => throw ArgumentError("Invalid value: \$value"),');
   buffer.writeln('    );');
   buffer.writeln('  }');
   buffer.writeln('}');
@@ -582,7 +555,7 @@ void generateBarrelFile(
     buffer.writeln("export '${fileName}_data.dart';");
   }
 
-  final barrelPath = pp.join(outputDirectory, 'pb_data.dart');
+  final barrelPath = pp.join(outputDirectory, 'dto_generated.dart');
   File(barrelPath).writeAsStringSync(buffer.toString());
 }
 

@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug PocketBase Plus",
+      "type": "dart",
+      "request": "launch",
+      "program": "bin/main.dart",
+      "args": ["--config", "./pocketbase.yaml"]
+    },
+    {
+      "name": "Debug Tests",
+      "type": "dart",
+      "request": "launch",
+      "program": "test/pocketbase_plus_test.dart"
+    },
+    {
+      "name": "Debug with Mock Data",
+      "type": "dart",
+      "request": "launch",
+      "program": "bin/debug_main.dart"
+    }
+  ]
+}

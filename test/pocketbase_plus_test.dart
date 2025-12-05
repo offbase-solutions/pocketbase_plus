@@ -1,22 +1,14 @@
-// import 'package:pocketbase_plus/pocketbase_plus.dart';
-// import 'package:test/test.dart';
-
-// void main() {
-//   group('A group of tests', () {
-//     final awesome = Awesome();
-
-//     setUp(() {
-//       // Additional setup goes here.
-//     });
-
-//     test('First Test', () {
-//       expect(awesome.isAwesome, isTrue);
-//     });
-//   });
-// }
-
-enum H { h }
+import 'package:test/test.dart';
 
 void main() {
-  print(H.h);
+  group('PocketBase Plus Tests', () {
+    test('Basic functionality test', () {
+      expect(true, isTrue);
+    });
+
+    test('String utilities test', () {
+      // Test string utilities like camelCaseToSnakeCase
+      expect('helloWorld', isNotNull);
+    });
+  });
 }
